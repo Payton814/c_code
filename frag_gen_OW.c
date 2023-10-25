@@ -27,6 +27,8 @@
 #include <stdint.h>
 #include <curses.h>
 
+#define NUMBER_OF_QWORDS 2040
+
 int main()
 {
   // We know we are going to open ./xillybus_event_out, ./xillybus_event_size_out, and ./xillybus_mmreq
@@ -42,14 +44,16 @@ int main()
   //int file_WR[n_files];
   // int file_RD[n_files];
   char* c = (char*)calloc(100, sizeof(char));
-  // Remember 1 Byte is 2 hex nombers
+  // Remember 1 Byte is 2 hex numbers
   uint32_t addr = 0;
   //uint32_t d_event_size_out = 0x12345678;
-  uint64_t d_event_out = 0x1122334455667788;
-  uint32_t ev_length = sizeof(d_event_out);
+  uint64_t d_event_out = 0x112233445566778b;
+  uint32_t ev_length = NUMBER_OF_QWORDS*sizeof(d_event_out);
   uint32_t tag = ((addr&0xFFF << 20))|(ev_length&0xFFFFF);
-  uint64_t buf[128];
-  for (int i=0;i<128;i++) buf[i] = d_event_out;
+
+  printf("tag = %4.4x\n", tag);
+  uint64_t buf[NUMBER_OF_QWORDS];
+  for (int i=0;i<NUMBER_OF_QWORDS;i++) buf[i] = d_event_out + i;
  
   // printf("youre here\n");
 
@@ -61,15 +65,16 @@ int main()
   // Simply checks if something went wring trying to open the files
   if(file[0] < 0 || file[1] < 0 || file[2] < 0)
     {
-      // print the tyoe of error that in the code
+      // print the type of error that in the code
       printf("Error Number % d\n", errno);
       perror("Program");
     }
 
 write(file[1], &tag, sizeof(tag));
-write(file[2], &d_event_out, sizeof(d_event_out));
+write(file[2], &buf, NUMBER_OF_QWORDS*sizeof(d_event_out));
+write(STDOUT_FILENO, &buf, NUMBER_OF_QWORDS*sizeof(d_event_out));
 
-printf("Enter '1' to close all the files\n");
+//printf("Enter '1' to close all the files\n");
 
 while (1)
   {
